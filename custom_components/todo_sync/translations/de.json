@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zwei To-do-Listen abgleichen",
+        "description": "Einträge werden über ihren Namen zugeordnet. Liste A darf eine Liste sein, die abgehakte Einträge nicht behält (z. B. die Alexa-Einkaufsliste): Verschwindet dort ein Eintrag, wird er in Liste B abgehakt, und Abhaken in Liste B entfernt ihn aus Liste A.",
+        "data": {
+          "list_a": "Liste A",
+          "list_b": "Liste B"
+        }
+      }
+    },
+    "error": {
+      "same_list": "Bitte zwei verschiedene Listen wählen"
+    },
+    "abort": {
+      "already_configured": "Diese beiden Listen werden schon abgeglichen"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_sync": {
+        "name": "Letzter Abgleich"
+      }
+    }
+  },
+  "services": {
+    "sync_now": {
+      "name": "Jetzt abgleichen",
+      "description": "Gleicht alle eingerichteten Listenpaare sofort ab.",
+      "fields": {
+        "force": {
+          "name": "Erzwingen",
+          "description": "Auch abgleichen, wenn mehr als die Hälfte der Einträge auf einmal entfernt oder abgehakt würde (gilt sonst als Ausfall einer Liste)."
+        }
+      }
+    }
+  }
+}

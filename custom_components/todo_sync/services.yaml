@@ -1,0 +1,6 @@
+sync_now:
+  fields:
+    force:
+      default: false
+      selector:
+        boolean:
