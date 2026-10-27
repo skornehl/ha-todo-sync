@@ -20,6 +20,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ABSENCE_CONFIRM_SECONDS,
     CONF_LIST_A,
     CONF_LIST_B,
     DEBOUNCE_SECONDS,
@@ -136,7 +137,15 @@ class TodoSyncManager:
         self.status.items_b = sum(1 for i in b_items if i.status == OPEN)
 
         now = dt_util.utcnow().timestamp()
-        result = merge(a_items, b_items, self._snapshot, self._pending, now, PENDING_GRACE_SECONDS)
+        result = merge(
+            a_items,
+            b_items,
+            self._snapshot,
+            self._pending,
+            now,
+            PENDING_GRACE_SECONDS,
+            ABSENCE_CONFIRM_SECONDS,
+        )
         if not force:
             self._check_mass_change(result.actions)
 

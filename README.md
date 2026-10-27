@@ -37,6 +37,10 @@ Sync polls (every 15 minutes by default).
   with `force: true` if it really was intended.
 - A write that is not yet visible on the other side (Keep is polled) is
   not mistaken for a change for up to 20 minutes.
+- An item that disappears from a list is only treated as checked off or
+  deleted after it has been missing for 6 minutes: a single read can be
+  incomplete. Checking off an item (it stays in the list, marked done) is
+  synced right away.
 
 The sensor *Last sync* shows the time of the last successful sync, the
 last error and the last changes.
