@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sync two to-do lists",
+        "description": "Items are matched by name. List A may be a list that cannot keep checked-off items (such as the Alexa shopping list): an item disappearing there is checked off in list B, and checking it off in list B removes it from list A.",
+        "data": {
+          "list_a": "List A",
+          "list_b": "List B"
+        }
+      }
+    },
+    "error": {
+      "same_list": "Pick two different lists"
+    },
+    "abort": {
+      "already_configured": "These two lists are already synced"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_sync": {
+        "name": "Last sync"
+      }
+    }
+  },
+  "services": {
+    "sync_now": {
+      "name": "Sync now",
+      "description": "Sync all configured list pairs immediately.",
+      "fields": {
+        "force": {
+          "name": "Force",
+          "description": "Also sync when more than half of the items would be removed or checked off at once (normally treated as an outage of one list)."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "domain": "todo_sync",
+  "name": "To-do List Sync",
+  "codeowners": ["@skornehl"],
+  "config_flow": true,
+  "dependencies": ["todo"],
+  "documentation": "https://github.com/skornehl/ha-todo-sync",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/skornehl/ha-todo-sync/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
