@@ -15,6 +15,11 @@ remote service polled every few minutes). Every write is therefore
 remembered as *pending* with the value it should produce; until the side
 shows that value or the grace period ends, the expected value is used
 instead of the stale one, so a sync never undoes its own writes.
+
+Reads can also be incomplete for a moment (the Alexa shopping list add-on
+once returned 13 of 17 items). An item that disappears from a side is
+therefore only treated as checked off or deleted once it has been missing
+for `confirm` seconds; until then it counts as still there.
 """
 from __future__ import annotations
 
@@ -74,11 +79,14 @@ def merge(
     pending: dict[str, dict[str, Any]],
     now: float,
     grace: float,
+    confirm: float = 0.0,
 ) -> MergeResult:
     """Compute the actions that bring A and B in line with each other.
 
     snapshot: key -> {"summary", "a": bool (open on A), "b": OPEN|DONE|None}
-    pending: "<side>:<key>" -> {"expect": value, "ts": float}
+    pending: "<side>:<key>" -> {"expect": value, "ts": float}, plus
+             "gone:<side>:<key>" -> {"since": float} for items that went
+             missing and are not yet confirmed gone
     """
     a_all = index(a_items)
     b_idx = index(b_items)
@@ -95,12 +103,26 @@ def merge(
         still_pending[f"{side}:{key}"] = entry
         return entry["expect"]
 
+    def confirmed_gone(side: str, key: str) -> bool:
+        """True once the item has been missing on `side` for `confirm` seconds."""
+        marker = f"gone:{side}:{key}"
+        since = pending.get(marker, {}).get("since", now)
+        if now - since >= confirm:
+            return True
+        still_pending[marker] = {"since": since}
+        return False
+
     for key in set(a_all) | set(b_idx) | set(snapshot):
         a_item = a_all.get(key)
         b_item = b_idx.get(key)
         a = effective("a", key, key in a_open)
         b = effective("b", key, b_item.status if b_item else None)
         s = snapshot.get(key)
+        if s is not None:
+            if s["a"] and not a and not confirmed_gone("a", key):
+                a = True
+            if s["b"] is not None and b is None and not confirmed_gone("b", key):
+                b = s["b"]
         summary = (
             (a_item.summary if a_item else None)
             or (b_item.summary if b_item else None)

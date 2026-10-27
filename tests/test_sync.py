@@ -169,3 +169,44 @@ def test_check_off_not_yet_visible_on_alexa_is_not_undone():
     # Alexa still shows the item on the next run.
     r2 = run(a("Milch"), b(done=("Milch",)), r1.snapshot, r1.pending, now=1050)
     assert r2.actions == []
+
+
+# -- incomplete reads ------------------------------------------------------------
+
+CONFIRM = 360
+
+
+def run_c(a_items, b_items, snapshot, pending=None, now=1000.0):
+    return sync.merge(a_items, b_items, snapshot, pending or {}, now, GRACE, CONFIRM)
+
+
+def test_item_briefly_missing_on_alexa_is_not_checked_off():
+    # The real incident: one read of the Alexa list lacked 4 of 17 items.
+    snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
+    r1 = run_c([], b("Milch"), snap)
+    assert r1.actions == []
+    assert r1.snapshot["milch"]["a"] is True
+    # Back on the next read: nothing happened, the marker is gone.
+    r2 = run_c(a("Milch"), b("Milch"), r1.snapshot, r1.pending, now=1100)
+    assert r2.actions == [] and r2.pending == {}
+
+
+def test_item_missing_for_longer_than_confirm_is_checked_off():
+    snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
+    r1 = run_c([], b("Milch"), snap)
+    r2 = run_c([], b("Milch"), r1.snapshot, r1.pending, now=1000 + CONFIRM)
+    assert ops(r2) == [("b", "set_status", "Milch", DONE)]
+
+
+def test_item_briefly_missing_on_keep_is_not_removed_from_alexa():
+    snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
+    r1 = run_c(a("Milch"), [], snap)
+    assert r1.actions == []
+    r2 = run_c(a("Milch"), [], r1.snapshot, r1.pending, now=1000 + CONFIRM)
+    assert ops(r2) == [("a", "set_status", "Milch", DONE)]
+
+
+def test_explicit_check_off_in_keep_is_not_delayed():
+    snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
+    r = run_c(a("Milch"), b(done=("Milch",)), snap)
+    assert ops(r) == [("a", "set_status", "Milch", DONE)]
