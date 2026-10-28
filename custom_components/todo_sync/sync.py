@@ -79,7 +79,7 @@ def merge(
     pending: dict[str, dict[str, Any]],
     now: float,
     grace: float,
-    confirm: float = 0.0,
+    confirm: float,
 ) -> MergeResult:
     """Compute the actions that bring A and B in line with each other.
 
@@ -118,11 +118,18 @@ def merge(
         a = effective("a", key, key in a_open)
         b = effective("b", key, b_item.status if b_item else None)
         s = snapshot.get(key)
+        # Assumed values stand in for a read that may be incomplete. They
+        # must never trigger a write to that side: there is no item to
+        # update, and adding one would create a duplicate once the read is
+        # complete again.
+        a_assumed = b_assumed = False
         if s is not None:
-            if s["a"] and not a and not confirmed_gone("a", key):
-                a = True
+            # Only an item that is really missing; one that is still there
+            # but completed was checked off explicitly and syncs at once.
+            if s["a"] and a_item is None and not a and not confirmed_gone("a", key):
+                a, a_assumed = True, True
             if s["b"] is not None and b is None and not confirmed_gone("b", key):
-                b = s["b"]
+                b, b_assumed = s["b"], True
         summary = (
             (a_item.summary if a_item else None)
             or (b_item.summary if b_item else None)
@@ -130,6 +137,12 @@ def merge(
         )
 
         a_t, b_t = _decide(a, b, s)
+        # Defer changes to a side whose read is in doubt; the next run
+        # decides again with a complete read or a confirmed absence.
+        if a_assumed and a_t != a:
+            a_t = a
+        if b_assumed and b_t != b:
+            b_t = b
 
         if a_t != a:
             if a_t:

@@ -32,7 +32,8 @@ def ops(result):
 
 
 def run(a_items, b_items, snapshot=None, pending=None, now=1000.0):
-    return sync.merge(a_items, b_items, snapshot or {}, pending or {}, now, GRACE)
+    # confirm=0: these tests cover the merge rules, not incomplete reads.
+    return sync.merge(a_items, b_items, snapshot or {}, pending or {}, now, GRACE, 0)
 
 
 def settled(result, now=1000.0):
@@ -210,3 +211,26 @@ def test_explicit_check_off_in_keep_is_not_delayed():
     snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
     r = run_c(a("Milch"), b(done=("Milch",)), snap)
     assert ops(r) == [("a", "set_status", "Milch", DONE)]
+
+
+def test_missing_on_keep_while_alexa_confirmed_gone_adds_no_duplicate():
+    # Gone from Alexa for long enough, but this Keep read lacks the item:
+    # Keep must not get a second "Milch".
+    snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
+    pending = {"gone:a:milch": {"since": 1000 - CONFIRM}}
+    r = run_c([], [], snap, pending)
+    assert all(not (x.side == "b" and x.op == "add") for x in r.actions)
+    assert r.snapshot["milch"]["b"] == OPEN
+
+
+def test_readded_on_alexa_while_missing_on_keep_adds_no_duplicate():
+    snap = {"milch": {"summary": "Milch", "a": False, "b": DONE}}
+    r = run_c(a("Milch"), [], snap)
+    assert all(not (x.side == "b" and x.op == "add") for x in r.actions)
+
+
+def test_completed_on_alexa_is_checked_off_in_keep_at_once():
+    # Still listed on Alexa, but completed: an explicit check-off, no delay.
+    snap = {"milch": {"summary": "Milch", "a": True, "b": OPEN}}
+    r = run_c([Item("a-Milch", "Milch", DONE)], b("Milch"), snap)
+    assert ops(r) == [("b", "set_status", "Milch", DONE)]
