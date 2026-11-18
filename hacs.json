@@ -1,5 +1,7 @@
 {
   "name": "To-do List Sync",
   "render_readme": true,
-  "homeassistant": "2025.6.0"
+  "homeassistant": "2025.6.0",
+  "zip_release": true,
+  "filename": "todo_sync.zip"
 }

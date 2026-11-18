@@ -5,6 +5,11 @@ Home Assistant custom integration (HACS) that syncs two `todo.*` entities.
 - Conventional Commits, branches `<type>/<slug>`, never push to `main`;
   always a pull request. Author `Sebastian Kornehl <sebastian@kornehl.org>`,
   `Co-Authored-By` trailer when an agent did the work. English in code and docs.
+- Releases: tag `vX.Y.Z` with the same version in `manifest.json`. On
+  publish, `.github/workflows/release.yml` attaches `todo_sync.zip` (the
+  integration directory, files in the ZIP root); `hacs.json` sets
+  `zip_release`, so HACS installs from it and counts its downloads. A tag that
+  does not match the manifest gets no ZIP.
 - `custom_components/todo_sync/sync.py` is the whole merge logic and must not
   import Home Assistant, so `tests/test_sync.py` runs without it. Every
   behaviour change there needs a test.
