@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  zip:
+    name: Attach todo_sync.zip
+    runs-on: ubuntu-latest
+    # Uploading a release asset needs write access to the repository contents.
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # HACS shows the manifest version, not the tag.
+      - name: Check the manifest version
+        run: |
+          version=$(jq -r .version custom_components/todo_sync/manifest.json)
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::manifest.json has version $version, the release tag is $TAG"
+            exit 1
+          fi
+
+      # hacs.json sets zip_release: HACS extracts the ZIP into
+      # custom_components/todo_sync, so its files go in the root.
+      - name: Build the ZIP
+        working-directory: custom_components/todo_sync
+        run: zip -r -X "$RUNNER_TEMP/todo_sync.zip" .
+
+      - name: Attach the ZIP to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "$RUNNER_TEMP/todo_sync.zip" --clobber
